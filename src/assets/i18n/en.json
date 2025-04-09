@@ -1,1 +1,5 @@
-{"HELLO": "Hello World"}
+{
+    "HELLO": "Hello World",
+    "name":"name",
+    "firstName":"First Name"
+}
