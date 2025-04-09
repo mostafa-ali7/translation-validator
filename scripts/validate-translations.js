@@ -72,7 +72,10 @@ const ar = JSON.parse(arRaw);
 const missingErrors = detectMissingKeys(en, ar);
 
 // Combine all errors
-const allErrors = [...duplicateErrors, ...missingErrors];
+const allErrors = [
+  ...(duplicateErrors.length > 0 ? [`❌ Duplicate keys found:\n  ${duplicateErrors.join('\n  ')}`] : []),
+  ...(missingErrors.length > 0 ? [`❌ Missing keys:\n  ${missingErrors.join('\n  ')}`] : [])
+];
 
 // If there are errors, print them and fail the action
 if (allErrors.length > 0) {
