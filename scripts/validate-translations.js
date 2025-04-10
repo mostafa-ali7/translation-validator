@@ -20,39 +20,35 @@ function detectDuplicateKeys(content, filename) {
     }
   });
 
-  // Check for duplicates (keys with the same lowercase version)
+  // Group duplicates by case-insensitive keys and report them
   for (const [lowerKey, entries] of keyLineMap.entries()) {
     if (entries.length > 1) {
       const entryLines = entries
-        .map(e => `🔁 "${e.originalKey}" at line ${e.line}`)
+        .map(e => `🟡 "${e.originalKey}" at line ${e.line}`)
         .join('\n  ');
-      duplicates.push(entryLines);
+      duplicates.push(`❗ Duplicate keys found in ${filename} for "${entries[0].originalKey}":\n  ${entryLines}`);
     }
   }
 
-  // If there are duplicate keys, fail the action
-  if (duplicates.length > 0) {
-    console.error(`❌ Duplicate keys found in ${filename}:\n  ${duplicates.join('\n  ')}`);
-    process.exit(1);
-  }
+  return duplicates;
 }
 
-function detectMissingKeys(en, ar) {
+function detectMissingKeys(en, ar, enFilename, arFilename) {
   const enKeys = Object.keys(en);
   const arKeys = Object.keys(ar);
 
   const missingInAr = enKeys.filter(k => !arKeys.includes(k));
   const missingInEn = arKeys.filter(k => !enKeys.includes(k));
 
-  if (missingInAr.length || missingInEn.length) {
-    if (missingInAr.length) {
-      console.error(`❌ Missing keys in ar.json:\n  ${missingInAr.join('\n  ')}`);
-    }
-    if (missingInEn.length) {
-      console.error(`❌ Missing keys in en.json:\n  ${missingInEn.join('\n  ')}`);
-    }
-    process.exit(1);
+  const missingKeys = [];
+  if (missingInAr.length) {
+    missingKeys.push(`❌ Missing keys in ${arFilename}:\n  ${missingInAr.join('\n  ')}`);
   }
+  if (missingInEn.length) {
+    missingKeys.push(`❌ Missing keys in ${enFilename}:\n  ${missingInEn.join('\n  ')}`);
+  }
+
+  return missingKeys;
 }
 
 // === Load files ===
@@ -63,14 +59,28 @@ const enRaw = fs.readFileSync(enPath, 'utf8');
 const arRaw = fs.readFileSync(arPath, 'utf8');
 
 // === Detect Duplicates ===
-detectDuplicateKeys(enRaw, 'en.json');
-detectDuplicateKeys(arRaw, 'ar.json');
+const duplicateErrors = [
+  ...detectDuplicateKeys(enRaw, 'en.json'),
+  ...detectDuplicateKeys(arRaw, 'ar.json')
+];
 
 // === Parse content after checks ===
 const en = JSON.parse(enRaw);
 const ar = JSON.parse(arRaw);
 
 // === Check for Missing Keys ===
-detectMissingKeys(en, ar);
+const missingErrors = detectMissingKeys(en, ar, 'en.json', 'ar.json');
+
+// Combine all errors
+const allErrors = [
+  ...(duplicateErrors.length > 0 ? duplicateErrors : []),
+  ...(missingErrors.length > 0 ? missingErrors : [])
+];
+
+// If there are errors, print them and fail the action
+if (allErrors.length > 0) {
+  console.error(allErrors.join('\n\n'));
+  process.exit(1);
+}
 
 console.log('✅ All good! No duplicates or missing keys.');
