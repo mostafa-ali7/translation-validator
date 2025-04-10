@@ -26,7 +26,7 @@ function detectDuplicateKeys(content, filename) {
       const entryLines = entries
         .map(e => `🟡 "${e.originalKey}" at line ${e.line}`)
         .join('\n  ');
-      duplicates.push(`❌ Duplicate keys found in ${filename} for "${entries[0].originalKey}":\n  ${entryLines}`);
+      duplicates.push(`❗ Duplicate keys found in ${filename} for "${entries[0].originalKey}":\n  ${entryLines}`);
     }
   }
 
