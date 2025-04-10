@@ -20,20 +20,20 @@ function detectDuplicateKeys(content, filename) {
     }
   });
 
-  // Check for duplicates (keys with the same lowercase version)
+  // Group duplicates by case-insensitive keys and report them
   for (const [lowerKey, entries] of keyLineMap.entries()) {
     if (entries.length > 1) {
       const entryLines = entries
-        .map(e => `🔁 "${e.originalKey}" at line ${e.line}`)
+        .map(e => `🟡 "${e.originalKey}" at line ${e.line}`)
         .join('\n  ');
-      duplicates.push(entryLines);
+      duplicates.push(`❌ Duplicate keys found in ${filename} for "${entries[0].originalKey}":\n  ${entryLines}`);
     }
   }
 
   return duplicates;
 }
 
-function detectMissingKeys(en, ar) {
+function detectMissingKeys(en, ar, enFilename, arFilename) {
   const enKeys = Object.keys(en);
   const arKeys = Object.keys(ar);
 
@@ -42,10 +42,10 @@ function detectMissingKeys(en, ar) {
 
   const missingKeys = [];
   if (missingInAr.length) {
-    missingKeys.push(`🟡 Missing keys in ar.json:\n  ${missingInAr.join('\n  ')}`);
+    missingKeys.push(`❌ Missing keys in ${arFilename}:\n  ${missingInAr.join('\n  ')}`);
   }
   if (missingInEn.length) {
-    missingKeys.push(`🟡 Missing keys in en.json:\n  ${missingInEn.join('\n  ')}`);
+    missingKeys.push(`❌ Missing keys in ${enFilename}:\n  ${missingInEn.join('\n  ')}`);
   }
 
   return missingKeys;
@@ -69,12 +69,12 @@ const en = JSON.parse(enRaw);
 const ar = JSON.parse(arRaw);
 
 // === Check for Missing Keys ===
-const missingErrors = detectMissingKeys(en, ar);
+const missingErrors = detectMissingKeys(en, ar, 'en.json', 'ar.json');
 
 // Combine all errors
 const allErrors = [
-  ...(duplicateErrors.length > 0 ? [`❌ Duplicate keys found:\n  ${duplicateErrors.join('\n  ')}`] : []),
-  ...(missingErrors.length > 0 ? [`❌ Missing keys:\n  ${missingErrors.join('\n  ')}`] : [])
+  ...(duplicateErrors.length > 0 ? duplicateErrors : []),
+  ...(missingErrors.length > 0 ? missingErrors : [])
 ];
 
 // If there are errors, print them and fail the action
